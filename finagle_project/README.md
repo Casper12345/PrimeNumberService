@@ -11,7 +11,8 @@ The Proxy Service uses a Twitter http server. The http server has set a limitati
 This is due to the cache size limitations and testing of the algorithm. The number 100000 has been set rather arbitrarily and due to testing time. The algorithm is for sure able to handle larger requests.     
 
 ### Tests 
-Unit tests were applied using Scala Test 3.0.8 to test the Prime Number Generator. Finatra Test Framework 20.3.0 was used to feature test the Http Server.  
+Unit tests were applied using Scala Test 3.0.8 to test the Prime Number Generator. The algorithm has been tested with with an input of 1000000. 
+Finatra Test Framework 20.3.0 was used to feature test the Http Server.  
 
 ### How to
 - Download the sources.
