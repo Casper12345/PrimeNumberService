@@ -9,13 +9,14 @@ import com.twitter.server.TwitterServer
 import com.twitter.finagle.http.service.RoutingService
 import com.twitter.finagle.http.path._
 import spray.json._
+import com.twitter.app.App
 
-object ProxyHttpServer extends TwitterServer {
+class ProxyHttpServer(serverAddress: String, proxyAddress: String) extends TwitterServer {
   import com.prime.serializer.JsonSerializers._
 
   val clientServicePerEndpoint: PrimeServerService.ServicePerEndpoint =
     Thrift.client.servicePerEndpoint[PrimeServerService.ServicePerEndpoint](
-      "localhost:9000",
+      serverAddress,
       "thrift_client"
     )
 
@@ -39,11 +40,16 @@ object ProxyHttpServer extends TwitterServer {
     }
 
     HttpMuxer.addRichHandler("/", router)
-    val server = Http.serve(":8888", HttpMuxer)
+    val server = Http.serve(proxyAddress, HttpMuxer)
     onExit {
       server.close()
     }
     Await.ready(server)
   }
 
+}
+
+object RunProxyHttpServer extends App {
+  val proxyServer = new ProxyHttpServer( "localhost:9000", ":8888")
+  proxyServer.main()
 }

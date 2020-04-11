@@ -7,9 +7,9 @@ import scala.util.Try
 class PrimeNumberGeneratorTest extends FlatSpec with Matchers {
 
   "isPrime" should "return true when number is prime and false when not" in {
-    val primeList = Util.parsePrimes("first_50k_primes.txt")
+    val primeList = Util.parsePrimes("first_10k_primes.txt")
 
-    for (i <- 0 to 611954) {
+    for (i <- 0 to 104730) {
       if (primeList.contains(i)) {
         PrimeNumberGenerator.isPrime(i) shouldBe true
       } else {
@@ -18,10 +18,10 @@ class PrimeNumberGeneratorTest extends FlatSpec with Matchers {
     }
   }
 
-  "getPrimes" should "return first 50k primes" in {
-    val primeList = Util.parsePrimes("first_50k_primes.txt")
+  "getPrimes" should "return first primes up to 1m" in {
+    val primeList = Util.parsePrimes("primes_up_to_1m.txt")
 
-    val output = PrimeNumberGenerator.getPrimes(611953)
+    val output = PrimeNumberGenerator.getPrimes(1000000)
 
     output shouldEqual primeList
 

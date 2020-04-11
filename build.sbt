@@ -14,6 +14,6 @@ lazy val FinagleProject = (project in file("finagle_project"))
       Dependencies.TwitterServer,
       Dependencies.SprayJson,
       Dependencies.ScalaTest
-    )
+    ) ++ Dependencies.FinatraTestDependencies
   ).enablePlugins(ScroogeSBT)
 
