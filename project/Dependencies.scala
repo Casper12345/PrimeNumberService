@@ -5,6 +5,7 @@ object Dependencies {
   val FinagleThrift = "com.twitter" %% "finagle-thrift" % "20.3.0"
   val TwitterServer = "com.twitter" %% "twitter-server" % "20.3.0"
   val SprayJson = "io.spray" %% "spray-json" % "1.3.5"
+  val TypeSafeConfig = "com.typesafe" % "config" % "1.4.0"
   val ScalaTest = "org.scalatest" %% "scalatest" % "3.0.8" % Test
   val FinatraTestDependencies = Seq(
     "com.twitter" %% "finatra-http" % "20.3.0" % "test" classifier "tests",

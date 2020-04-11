@@ -1,17 +1,20 @@
 package com.prime.proxy
 
+import com.prime.util.ServerErrors.GenericHttpRequestError
 import com.server.PrimeServerService.GetPrimeNumber
 import com.server.{PrimeList, PrimeServerService}
 import com.twitter.finagle.{Http, Service, Thrift}
-import com.twitter.util.{Await, Return, Throw}
-import com.twitter.finagle.http.{HttpMuxer, Request, Response, Status}
+import com.twitter.util.{Await, Future, Return, Throw}
+import com.twitter.finagle.http.{HttpMuxer, Request, Response, Status, Version}
 import com.twitter.server.TwitterServer
 import com.twitter.finagle.http.service.RoutingService
 import com.twitter.finagle.http.path._
 import spray.json._
 import com.twitter.app.App
+import com.typesafe.config.{Config, ConfigFactory}
 
 class ProxyHttpServer(serverAddress: String, proxyAddress: String) extends TwitterServer {
+
   import com.prime.serializer.JsonSerializers._
 
   val clientServicePerEndpoint: PrimeServerService.ServicePerEndpoint =
@@ -21,22 +24,37 @@ class ProxyHttpServer(serverAddress: String, proxyAddress: String) extends Twitt
     )
 
   def primeService(number: Int): Service[Request, Response] = (request: Request) => {
-    clientServicePerEndpoint.getPrimeNumber(GetPrimeNumber.Args(number)).liftToTry.map {
+    clientServicePerEndpoint.getPrimeNumber(GetPrimeNumber.Args(number)).liftToTry.flatMap {
       case Throw(e) =>
-        val response = Response(request.version, Status.InternalServerError)
-        response.contentString = e.getMessage
-        response
+        errorService(e)(request)
       case Return(list: PrimeList) =>
-          val response = Response(request.version, Status.Ok)
-          response.setContentTypeJson()
-          response.contentString = list.toJson.prettyPrint
-          response
+        Future.value(createJsonResponse(request.version, list.toJson.prettyPrint, Status.Ok))
+    }
+  }
+
+  def createJsonResponse(version: Version, jsonString: String, status: Status): Response = {
+    val response = Response(version, status)
+    response.setContentTypeJson()
+    response.setContentString(jsonString)
+    response
+  }
+
+  def errorService(throwable: Throwable): Service[Request, Response] = (request: Request) => {
+    val errorMessageJson = throwable.toJson.prettyPrint
+    throwable match {
+      case _: GenericHttpRequestError =>
+        Future.value(createJsonResponse(request.version, errorMessageJson, Status.BadRequest))
+      case _ =>
+        Future.value(createJsonResponse(request.version, errorMessageJson, Status.InternalServerError))
     }
   }
 
   def main() {
     val router = RoutingService.byPathObject[Request] {
-      case Root / "prime" / Integer(number) => primeService(number)
+      case Root / "prime" / Integer(number) =>
+        if (number <= 1000000 && number >= 0) primeService(number) else errorService(
+          GenericHttpRequestError(s"$number is not in the allowed range: 0 - 1000000")
+        )
     }
 
     HttpMuxer.addRichHandler("/", router)
@@ -50,6 +68,10 @@ class ProxyHttpServer(serverAddress: String, proxyAddress: String) extends Twitt
 }
 
 object RunProxyHttpServer extends App {
-  val proxyServer = new ProxyHttpServer( "localhost:9000", ":8888")
+  val conf: Config = ConfigFactory.load("proxy_app.conf")
+  val proxyServer = new ProxyHttpServer(
+    conf.getString("server.prime_server_address"),
+    conf.getString("server.http_proxy_address")
+  )
   proxyServer.main()
 }

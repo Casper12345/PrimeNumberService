@@ -6,6 +6,7 @@ import com.twitter.util.{Await, Future}
 import com.twitter.app.App
 import com.twitter.finagle.{ListeningServer, Thrift}
 import com.twitter.server.TwitterServer
+import com.typesafe.config.{Config, ConfigFactory}
 
 class PrimeServer(address: String) extends TwitterServer {
 
@@ -29,6 +30,7 @@ object PrimeServerService extends PrimeServerService[Future] {
 }
 
 object RunPrimeServer extends App {
-  val primeServer = new PrimeServer("localHost:9000")
+  val conf: Config = ConfigFactory.load("server_app.conf")
+  val primeServer = new PrimeServer(conf.getString("server.address"))
   primeServer.main()
 }
