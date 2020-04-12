@@ -32,13 +32,6 @@ class ProxyHttpServer(serverAddress: String, proxyAddress: String) extends Twitt
     }
   }
 
-  def createJsonResponse(version: Version, jsonString: String, status: Status): Response = {
-    val response = Response(version, status)
-    response.setContentTypeJson()
-    response.setContentString(jsonString)
-    response
-  }
-
   def errorService(throwable: Throwable): Service[Request, Response] = (request: Request) => {
     val errorMessageJson = throwable.toJson.prettyPrint
     throwable match {
@@ -49,14 +42,21 @@ class ProxyHttpServer(serverAddress: String, proxyAddress: String) extends Twitt
     }
   }
 
-  def main() {
-    val router = RoutingService.byPathObject[Request] {
-      case Root / "prime" / Integer(number) =>
-        if (number <= 1000000 && number >= 0) primeService(number) else errorService(
-          GenericHttpRequestError(s"$number is not in the allowed range: 0 - 1000000")
-        )
-    }
+  def createJsonResponse(version: Version, jsonString: String, status: Status): Response = {
+    val response = Response(version, status)
+    response.setContentTypeJson()
+    response.setContentString(jsonString)
+    response
+  }
 
+  val router: RoutingService[Request] = RoutingService.byPathObject[Request] {
+    case Root / "prime" / Integer(number) =>
+      if (number <= 1000000 && number >= 0) primeService(number) else errorService(
+        GenericHttpRequestError(s"$number is not in the allowed range: 0 - 1000000")
+      )
+  }
+
+  def main() {
     HttpMuxer.addRichHandler("/", router)
     val server = Http.serve(proxyAddress, HttpMuxer)
     onExit {
