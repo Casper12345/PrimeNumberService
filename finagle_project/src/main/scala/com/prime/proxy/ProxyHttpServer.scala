@@ -17,13 +17,13 @@ class ProxyHttpServer(serverAddress: String, proxyAddress: String) extends Twitt
 
   import com.prime.serializer.JsonSerializers._
 
-  val clientServicePerEndpoint: PrimeServerService.ServicePerEndpoint =
+  private val clientServicePerEndpoint: PrimeServerService.ServicePerEndpoint =
     Thrift.client.servicePerEndpoint[PrimeServerService.ServicePerEndpoint](
       serverAddress,
       "thrift_client"
     )
 
-  def primeService(number: Int): Service[Request, Response] = (request: Request) => {
+  private def primeService(number: Int): Service[Request, Response] = (request: Request) => {
     clientServicePerEndpoint.getPrimeNumber(GetPrimeNumber.Args(number)).liftToTry.flatMap {
       case Throw(e) =>
         errorService(e)(request)
@@ -32,7 +32,7 @@ class ProxyHttpServer(serverAddress: String, proxyAddress: String) extends Twitt
     }
   }
 
-  def errorService(throwable: Throwable): Service[Request, Response] = (request: Request) => {
+  private def errorService(throwable: Throwable): Service[Request, Response] = (request: Request) => {
     val errorMessageJson = throwable.toJson.prettyPrint
     throwable match {
       case _: GenericHttpRequestError =>
@@ -42,14 +42,14 @@ class ProxyHttpServer(serverAddress: String, proxyAddress: String) extends Twitt
     }
   }
 
-  def createJsonResponse(version: Version, jsonString: String, status: Status): Response = {
+  private def createJsonResponse(version: Version, jsonString: String, status: Status): Response = {
     val response = Response(version, status)
     response.setContentTypeJson()
     response.setContentString(jsonString)
     response
   }
 
-  val router: RoutingService[Request] = RoutingService.byPathObject[Request] {
+  private val router: RoutingService[Request] = RoutingService.byPathObject[Request] {
     case Root / "prime" / Integer(number) =>
       if (number <= 1000000 && number >= 0) primeService(number) else errorService(
         GenericHttpRequestError(s"$number is not in the allowed range: 0 - 1000000")

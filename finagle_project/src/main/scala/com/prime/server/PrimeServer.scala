@@ -10,7 +10,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 
 class PrimeServer(address: String) extends TwitterServer {
 
-  val primeServer: ListeningServer = Thrift.server.serveIface(
+  private val primeServer: ListeningServer = Thrift.server.serveIface(
     address,
     PrimeServerService
   )
